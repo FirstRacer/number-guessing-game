@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>VAULT — Number Heist</title>
+<style>
+  :root{
+    --font-display: 'Century Gothic', 'Trebuchet MS', 'Segoe UI Semibold', system-ui, sans-serif;
+    --font-mono: 'SF Mono', 'Consolas', 'Menlo', 'Courier New', monospace;
+    --font-body: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+    --accent-gold: #e8b84f;
+    --accent-gold-soft: #f3cd7a;
+    --accent-cold: #4fa8ff;
+    --accent-hot: #ff6b5e;
+    --accent-good: #55d6a0;
+
+    --radius-lg: 26px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+  }
+
+  [data-theme="dark"]{
+    --bg-1: #090c14;
+    --bg-2: #142035;
+    --bg-3: #0e2f34;
+    --glass-bg: rgba(255,255,255,0.06);
+    --glass-bg-strong: rgba(255,255,255,0.09);
+    --glass-border: rgba(255,255,255,0.14);
+    --text-primary: #f3efe4;
+    --text-muted: rgba(243,239,228,0.58);
+    --shadow: 0 20px 60px rgba(0,0,0,0.45);
+    --orb-1: rgba(232,184,79,0.20);
+    --orb-2: rgba(79,168,255,0.16);
+    --input-bg: rgba(255,255,255,0.06);
+  }
+
+  [data-theme="light"]{
+    --bg-1: #eef3f8;
+    --bg-2: #dfe9f2;
+    --bg-3: #e6f0ea;
+    --glass-bg: rgba(255,255,255,0.55);
+    --glass-bg-strong: rgba(255,255,255,0.72);
+    --glass-border: rgba(255,255,255,0.85);
+    --text-primary: #172231;
+    --text-muted: rgba(23,34,49,0.58);
+    --shadow: 0 20px 50px rgba(30,50,80,0.15);
+    --orb-1: rgba(232,184,79,0.28);
+    --orb-2: rgba(79,168,255,0.22);
+    --input-bg: rgba(255,255,255,0.7);
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0;
+    min-height:100vh;
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 28px 16px;
+    position: relative;
+    overflow-x:hidden;
+    background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+    background-size: 220% 220%;
+    animation: driftBg 18s ease-in-out infinite;
+    transition: background 0.5s ease;
+  }
+
+  @keyframes driftBg{
+    0%{ background-position: 0% 30%; }
+    50%{ background-position: 100% 70%; }
+    100%{ background-position: 0% 30%; }
+  }
+
+  .orb{
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb-a{ width: 380px; height: 380px; background: var(--orb-1); top: -120px; left: -100px; }
+  .orb-b{ width: 420px; height: 420px; background: var(--orb-2); bottom: -140px; right: -120px; }
+
+  .app{
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+
+  .brand h1{
+    font-family: var(--font-display);
+    font-size: 1.28rem;
+    letter-spacing: 0.02em;
+    margin: 0;
+    line-height: 1.1;
+  }
+  .brand .sub{
+    display:block;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    color: var(--accent-gold-soft);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .lock-icon{ flex-shrink:0; }
+
+  .theme-toggle{
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition: transform 0.25s ease, background 0.25s ease;
+    color: var(--text-primary);
+  }
+  .theme-toggle:hover{ transform: scale(1.07) rotate(12deg); }
+  .theme-toggle svg{ width: 19px; height: 19px; }
+
+  .tabs{
+    display:flex;
+    gap: 8px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 6px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow);
+  }
+
+  .tab-btn{
+    flex:1;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 6px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .tab-btn .n{ display:block; font-size: 0.6rem; opacity:0.7; margin-top:2px; }
+  .tab-btn.active{
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-soft));
+    color: #1a1305;
+    box-shadow: 0 6px 16px rgba(232,184,79,0.35);
+  }
+  .tab-btn:not(.active):hover{ color: var(--text-primary); background: var(--glass-bg-strong); }
+
+  .card{
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 22px 22px 24px;
+    display:flex;
+    flex-direction:column;
+    gap: 16px;
+    position: relative;
+    overflow:hidden;
+  }
+
+  .stats-row{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .stat{
+    background: var(--input-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 8px 4px 7px;
+    text-align:center;
+  }
+  .stat .label{
+    display:block;
+    font-size: 0.56rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-bottom: 3px;
+  }
+  .stat .val{
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--text-primary);
+    transition: color 0.2s ease;
+  }
+
+  .gauge-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 4px;
+    padding-top: 4px;
+  }
+  .gauge{ width: 100%; max-width: 300px; height: auto; overflow: visible; }
+  .gauge-needle{ transform-origin: 100px 100px; transition: transform 0.55s cubic-bezier(.34,1.4,.4,1); }
+  .gauge-tick-label{
+    font-family: var(--font-mono);
+    font-size: 8px;
+    fill: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+  .gauge-label{
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: -14px;
+    min-height: 1.3em;
+    text-align:center;
+    transition: color 0.3s ease;
+  }
+
+  .feedback{
+    text-align:center;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    color: var(--text-muted);
+    min-height: 1.4em;
+    transition: opacity 0.2s ease;
+  }
+
+  .guess-form{
+    display:flex;
+    gap: 10px;
+  }
+  #guessInput{
+    flex:1;
+    min-width: 0;
+    background: var(--input-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 13px 14px;
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align:center;
+    letter-spacing: 0.04em;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  #guessInput::placeholder{ color: var(--text-muted); font-weight: 500; }
+  #guessInput:focus{
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px rgba(232,184,79,0.22);
+  }
+  #guessInput.shake{ animation: shake 0.4s ease; }
+  @keyframes shake{
+    10%,90%{ transform: translateX(-2px); }
+    20%,80%{ transform: translateX(4px); }
+    30%,50%,70%{ transform: translateX(-7px); }
+    40%,60%{ transform: translateX(7px); }
+  }
+
+  .btn-primary{
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 13px 22px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.92rem;
+    letter-spacing: 0.02em;
+    color: #1a1305;
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-soft));
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(232,184,79,0.32);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 12px 22px rgba(232,184,79,0.4); }
+  .btn-primary:active{ transform: translateY(0px) scale(0.97); }
+  .btn-primary:disabled{ opacity: 0.5; cursor: not-allowed; transform:none; }
+
+  .history{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 26px;
+  }
+  .chip{
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    animation: popIn 0.25s ease;
+  }
+  .chip.high{ color: var(--accent-hot); background: rgba(255,107,94,0.12); }
+  .chip.low{ color: var(--accent-cold); background: rgba(79,168,255,0.12); }
+  .chip.close{ color: var(--accent-gold); background: rgba(232,184,79,0.16); }
+  @keyframes popIn{ from{ transform: scale(0.4); opacity:0; } to{ transform: scale(1); opacity:1; } }
+
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(5,8,14,0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 16px;
+  }
+  .overlay.show{ opacity: 1; pointer-events: all; }
+
+  .result-card{
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: var(--radius-lg);
+    padding: 30px 26px 26px;
+    text-align:center;
+    max-width: 340px;
+    width: 100%;
+    box-shadow: var(--shadow);
+    transform: scale(0.85) translateY(14px);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(.34,1.5,.4,1);
+  }
+  .overlay.show .result-card{ transform: scale(1) translateY(0); opacity: 1; }
+
+  .result-icon{ font-size: 2.6rem; margin-bottom: 6px; }
+  .result-title{
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 4px 0 6px;
+  }
+  .result-sub{
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .result-stats{
+    display:flex;
+    justify-content:center;
+    gap: 18px;
+    margin-bottom: 20px;
+  }
+  .result-stats div{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .result-stats .rv{ font-family: var(--font-mono); font-weight:700; font-size: 1.1rem; }
+  .result-stats .rl{ font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; }
+
+  .best-flag{
+    display:inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent-gold);
+    letter-spacing: 0.08em;
+    margin-top: -12px;
+    margin-bottom: 14px;
+  }
+
+  footer.hint{
+    text-align:center;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    opacity: 0.65;
+  }
+
+  .confetti-container{
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 60;
+    overflow: hidden;
+  }
+  .confetti-piece{
+    position: absolute;
+    top: -20px;
+    width: 8px;
+    height: 14px;
+    opacity: 0.95;
+    animation-name: fall;
+    animation-timing-function: cubic-bezier(.4,.4,.6,1);
+    animation-fill-mode: forwards;
+  }
+  @keyframes fall{
+    to{ transform: translateY(110vh) rotate(560deg); opacity: 0.4; }
+  }
+
+  @media (max-width: 380px){
+    .stats-row{ grid-template-columns: repeat(2, 1fr); }
+    .brand h1{ font-size: 1.1rem; }
+    .card{ padding: 18px 16px 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
+    body{ animation: none; }
+  }
+</style>
+</head>
+<body data-theme="dark">
+
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="confetti-container" id="confetti"></div>
+
+  <div class="app">
+    <header>
+      <div class="brand">
+        <svg class="lock-icon" width="30" height="30" viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="10.5" width="16" height="10.5" rx="2.4" fill="var(--accent-gold)"/>
+          <path d="M7.5 10.5V7.6a4.5 4.5 0 0 1 9 0v2.9" stroke="var(--accent-gold)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="12" cy="15.4" r="1.7" fill="var(--bg-1)"/>
+        </svg>
+        <div>
+          <h1>VAULT</h1>
+          <span class="sub">Number Heist · 1–100</span>
+        </div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle dark / light">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+      </button>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Difficulty">
+      <button class="tab-btn active" data-diff="easy" data-max="15">Easy<span class="n">15 tries</span></button>
+      <button class="tab-btn" data-diff="medium" data-max="10">Medium<span class="n">10 tries</span></button>
+      <button class="tab-btn" data-diff="hard" data-max="5">Hard<span class="n">5 tries</span></button>
+    </div>
+
+    <div class="card">
+      <div class="stats-row">
+        <div class="stat"><span class="label">Left</span><span class="val" id="attemptsLeft">15</span></div>
+        <div class="stat"><span class="label">Score</span><span class="val" id="score">100</span></div>
+        <div class="stat"><span class="label">Time</span><span class="val" id="timer">00:00</span></div>
+        <div class="stat"><span class="label">Best</span><span class="val" id="bestScore">—</span></div>
+      </div>
+
+      <div class="gauge-wrap">
+        <svg class="gauge" viewBox="0 0 200 110">
+          <defs>
+            <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#4fa8ff"/>
+              <stop offset="50%" stop-color="#e8b84f"/>
+              <stop offset="100%" stop-color="#ff6b5e"/>
+            </linearGradient>
+          </defs>
+          <path d="M12,100 A88,88 0 0 1 188,100" fill="none" stroke="url(#arcGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
+          <text x="10" y="97" class="gauge-tick-label" text-anchor="start">COLD</text>
+          <text x="190" y="97" class="gauge-tick-label" text-anchor="end">HOT</text>
+          <g class="gauge-needle" id="gaugeNeedle" transform="rotate(0 100 100)">
+            <line x1="100" y1="100" x2="100" y2="24" stroke="var(--text-primary)" stroke-width="3.4" stroke-linecap="round"/>
+            <circle cx="100" cy="100" r="7" fill="var(--accent-gold)"/>
+          </g>
+        </svg>
+        <div class="gauge-label" id="gaugeLabel">Turn the dial — take a guess</div>
+      </div>
+
+      <div class="feedback" id="feedback">Crack the vault. Pick a number between 1 and 100.</div>
+
+      <form class="guess-form" id="guessForm" autocomplete="off">
+        <input type="number" id="guessInput" min="1" max="100" placeholder="1–100" inputmode="numeric" />
+        <button type="submit" class="btn-primary" id="submitBtn">Try</button>
+      </form>
+
+      <div class="history" id="history"></div>
+    </div>
+
+    <footer class="hint">PRESS ENTER TO SUBMIT · SCORE −10 PER MISS</footer>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="result-card" id="resultCard">
+      <div class="result-icon" id="resultIcon">🏆</div>
+      <div class="result-title" id="resultTitle">Vault Cracked</div>
+      <div class="result-sub" id="resultSub">You found it.</div>
+      <div class="best-flag" id="bestFlag" style="display:none;">★ NEW BEST SCORE ★</div>
+      <div class="result-stats">
+        <div><span class="rv" id="resFinalScore">0</span><span class="rl">Score</span></div>
+        <div><span class="rv" id="resTime">00:00</span><span class="rl">Time</span></div>
+        <div><span class="rv" id="resGuesses">0</span><span class="rl">Guesses</span></div>
+      </div>
+      <button class="btn-primary" id="playAgainBtn" style="width:100%;">Play Again</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- State ----------
+  const DIFF_MAX = { easy: 15, medium: 10, hard: 5 };
+  let state = {
+    target: 0,
+    difficulty: 'easy',
+    maxAttempts: 15,
+    attemptsLeft: 15,
+    score: 100,
+    guessesMade: 0,
+    seconds: 0,
+    timerHandle: null,
+    timerStarted: false,
+    over: false
+  };
+
+  // best score kept in memory for this session only.
+  // NOTE: persistent localStorage is intentionally not used here — see chat reply.
+  let bestScore = null;
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const attemptsLeftEl = $('attemptsLeft');
+  const scoreEl = $('score');
+  const timerEl = $('timer');
+  const bestScoreEl = $('bestScore');
+  const gaugeNeedle = $('gaugeNeedle');
+  const gaugeLabel = $('gaugeLabel');
+  const feedbackEl = $('feedback');
+  const guessForm = $('guessForm');
+  const guessInput = $('guessInput');
+  const submitBtn = $('submitBtn');
+  const historyEl = $('history');
+  const overlay = $('overlay');
+  const resultIcon = $('resultIcon');
+  const resultTitle = $('resultTitle');
+  const resultSub = $('resultSub');
+  const resFinalScore = $('resFinalScore');
+  const resTime = $('resTime');
+  const resGuesses = $('resGuesses');
+  const bestFlag = $('bestFlag');
+  const playAgainBtn = $('playAgainBtn');
+  const themeToggle = $('themeToggle');
+  const themeIcon = $('themeIcon');
+  const confettiContainer = $('confetti');
+  const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+
+  // ---------- Audio ----------
+  let audioCtx = null;
+  function ensureAudio(){
+    if (!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e){ audioCtx = null; }
+    }
+  }
+  function beep(freq, dur, type, gainVal, delay){
+    if (!audioCtx) return;
+    delay = delay || 0;
+    const t0 = audioCtx.currentTime + delay;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(gainVal || 0.12, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+  function sfxClick(){ beep(520, 0.08, 'square', 0.05); }
+  function sfxHigh(){ beep(300, 0.16, 'sawtooth', 0.08); }
+  function sfxLow(){ beep(180, 0.16, 'sawtooth', 0.08); }
+  function sfxClose(){ beep(660, 0.1, 'triangle', 0.1); beep(880, 0.12, 'triangle', 0.09, 0.08); }
+  function sfxWin(){
+    [523,659,784,1046].forEach((f,i)=> beep(f, 0.22, 'triangle', 0.11, i*0.11));
+  }
+  function sfxLose(){
+    [400,320,240,160].forEach((f,i)=> beep(f, 0.28, 'sawtooth', 0.09, i*0.14));
+  }
+
+  // ---------- Theme ----------
+  const sunPath = 'M12 4V2M12 22v-2M4 12H2M22 12h-2M5 5 3.6 3.6M20.4 20.4 19 19M19 5l1.4-1.4M3.6 20.4 5 19M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z';
+  const moonPath = 'M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z';
+  function setTheme(t){
+    document.body.setAttribute('data-theme', t);
+    themeIcon.innerHTML = '<path d="' + (t === 'dark' ? sunPath : moonPath) + '"/>';
+  }
+  setTheme('dark');
+  themeToggle.addEventListener('click', () => {
+    ensureAudio(); sfxClick();
+    const cur = document.body.getAttribute('data-theme');
+    setTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+
+  // ---------- Helpers ----------
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+  function fmtTime(s){ return pad(Math.floor(s/60)) + ':' + pad(s % 60); }
+
+  function updateStatsUI(){
+    attemptsLeftEl.textContent = state.attemptsLeft;
+    scoreEl.textContent = state.score;
+    timerEl.textContent = fmtTime(state.seconds);
+    bestScoreEl.textContent = bestScore === null ? '—' : bestScore;
+  }
+
+  function startTimer(){
+    if (state.timerStarted) return;
+    state.timerStarted = true;
+    state.timerHandle = setInterval(() => {
+      state.seconds++;
+      timerEl.textContent = fmtTime(state.seconds);
+    }, 1000);
+  }
+  function stopTimer(){
+    if (state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle = null; }
+    state.timerStarted = false;
+  }
+
+  function setGauge(distance){
+    const closeness = Math.max(0, Math.min(1, 1 - distance / 50));
+    const angle = -90 + closeness * 180;
+    gaugeNeedle.setAttribute('transform', 'rotate(' + angle.toFixed(1) + ' 100 100)');
+  }
+
+  function newTarget(){
+    return Math.floor(Math.random() * 100) + 1;
+  }
+
+  // ---------- Game lifecycle ----------
+  function startGame(difficulty){
+    stopTimer();
+    state.difficulty = difficulty;
+    state.maxAttempts = DIFF_MAX[difficulty];
+    state.attemptsLeft = state.maxAttempts;
+    state.score = 100;
+    state.guessesMade = 0;
+    state.seconds = 0;
+    state.over = false;
+    state.target = newTarget();
+
+    guessInput.value = '';
+    guessInput.disabled = false;
+    submitBtn.disabled = false;
+    historyEl.innerHTML = '';
+    feedbackEl.textContent = 'Crack the vault. Pick a number between 1 and 100.';
+    gaugeLabel.textContent = 'Turn the dial — take a guess';
+    gaugeLabel.style.color = 'var(--text-primary)';
+    setGauge(100);
+    updateStatsUI();
+    overlay.classList.remove('show');
+  }
+
+  function addHistoryChip(guess, kind){
+    const chip = document.createElement('span');
+    chip.className = 'chip ' + kind;
+    chip.textContent = guess;
+    historyEl.appendChild(chip);
+  }
+
+  function endGame(won){
+    state.over = true;
+    stopTimer();
+    guessInput.disabled = true;
+    submitBtn.disabled = true;
+
+    let newBest = false;
+    if (won){
+      if (bestScore === null || state.score > bestScore){
+        bestScore = state.score;
+        newBest = true;
+      }
+    }
+    updateStatsUI();
+
+    resultIcon.textContent = won ? '🏆' : '🔒';
+    resultTitle.textContent = won ? 'Vault Cracked' : 'Vault Sealed';
+    resultSub.textContent = won
+      ? 'Nice work — you found the code before time ran out on tries.'
+      : 'Out of attempts. The code was ' + state.target + '.';
+    resFinalScore.textContent = won ? state.score : 0;
+    resTime.textContent = fmtTime(state.seconds);
+    resGuesses.textContent = state.guessesMade;
+    bestFlag.style.display = newBest ? 'inline-block' : 'none';
+
+    if (won){ sfxWin(); launchConfetti(); }
+    else { sfxLose(); }
+
+    setTimeout(() => overlay.classList.add('show'), won ? 250 : 80);
+  }
+
+  function submitGuess(){
+    if (state.over) return;
+    ensureAudio();
+    const raw = guessInput.value.trim();
+    const guess = parseInt(raw, 10);
+
+    if (!raw || isNaN(guess) || guess < 1 || guess > 100){
+      guessInput.classList.remove('shake');
+      void guessInput.offsetWidth;
+      guessInput.classList.add('shake');
+      feedbackEl.textContent = 'Enter a whole number between 1 and 100.';
+      sfxClick();
+      return;
+    }
+
+    startTimer();
+    state.guessesMade++;
+
+    if (guess === state.target){
+      setGauge(0);
+      gaugeLabel.textContent = '💥 Code cracked!';
+      gaugeLabel.style.color = 'var(--accent-good)';
+      addHistoryChip(guess, 'close');
+      feedbackEl.textContent = 'Exact match. The vault opens.';
+      endGame(true);
+      guessInput.value = '';
+      return;
+    }
+
+    // wrong guess
+    state.attemptsLeft--;
+    state.score = Math.max(0, state.score - 10);
+
+    const distance = Math.abs(guess - state.target);
+    setGauge(distance);
+
+    let kind, msg;
+    if (distance <= 5){
+      kind = 'close';
+      msg = '🔥 Very close! Too ' + (guess > state.target ? 'high' : 'low') + '.';
+      gaugeLabel.textContent = 'Scorching hot';
+      gaugeLabel.style.color = 'var(--accent-gold)';
+      sfxClose();
+    } else if (guess > state.target){
+      kind = 'high';
+      msg = '📈 Too high.';
+      gaugeLabel.textContent = distance <= 20 ? 'Warm' : 'Cold';
+      gaugeLabel.style.color = 'var(--accent-hot)';
+      sfxHigh();
+    } else {
+      kind = 'low';
+      msg = '📉 Too low.';
+      gaugeLabel.textContent = distance <= 20 ? 'Warm' : 'Cold';
+      gaugeLabel.style.color = 'var(--accent-cold)';
+      sfxLow();
+    }
+
+    addHistoryChip(guess, kind);
+    feedbackEl.textContent = msg;
+    updateStatsUI();
+    guessInput.value = '';
+    guessInput.focus();
+
+    if (state.attemptsLeft <= 0){
+      endGame(false);
+    }
+  }
+
+  guessForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitGuess();
+  });
+
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      ensureAudio(); sfxClick();
+      tabs.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      startGame(btn.dataset.diff);
+    });
+  });
+
+  playAgainBtn.addEventListener('click', () => {
+    ensureAudio(); sfxClick();
+    overlay.classList.remove('show');
+    setTimeout(() => startGame(state.difficulty), 200);
+  });
+
+  // ---------- Confetti ----------
+  const confettiColors = ['#e8b84f', '#4fa8ff', '#ff6b5e', '#55d6a0', '#f3cd7a'];
+  function launchConfetti(){
+    const count = 70;
+    for (let i = 0; i < count; i++){
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+      const left = Math.random() * 100;
+      const duration = 2.4 + Math.random() * 1.6;
+      const delay = Math.random() * 0.5;
+      const rotate = Math.random() * 360;
+      piece.style.left = left + 'vw';
+      piece.style.background = color;
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      piece.style.animationDuration = duration + 's';
+      piece.style.animationDelay = delay + 's';
+      piece.style.transform = 'rotate(' + rotate + 'deg)';
+      confettiContainer.appendChild(piece);
+      setTimeout(() => piece.remove(), (duration + delay) * 1000 + 200);
+    }
+  }
+
+  // ---------- Init ----------
+  startGame('easy');
+})();
+</script>
+</body>
+</html>
